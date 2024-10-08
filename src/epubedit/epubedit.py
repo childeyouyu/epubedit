@@ -3,7 +3,7 @@ import xml.etree.ElementTree as ET
 from typing import Literal
 
 
-class read_epub_info:
+class ReadEpubInfo:
     ns = {
 
     }
@@ -86,6 +86,18 @@ class read_epub_info:
                     elif metadata.tag == "{http://purl.org/dc/elements/1.1/}publisher":
                         self.publisher = metadata.text
 
+            if child.tag == "{http://www.idpf.org/2007/opf}spine":
+                for spine in child:
+                    if spine.attrib['idref'] == 'cover.xhtml':
+                        cover_file =
+                    print(spine.tag)
+                    print(spine.attrib['idref'])
+                    try:
+                        print(spine.attrib['{http://www.idpf.org/2007/opf}itemref'])
+                    except:
+                        ...
+                    # if spine.tag == ""
+                ...
     def get_info(
             self,
             parameter: Literal[
