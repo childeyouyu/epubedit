@@ -1,14 +1,14 @@
 import zipfile
-import xml.etree.ElementTree as ET
-from typing import Literal
+import xml.etree.ElementTree as Et
+from typing import Literal, List, Dict, Iterable
 
 
-class ReadEpubInfo:
+class Epubedit:
     ns = {
 
     }
 
-    def __init__(self, file_path):
+    def __init__(self, file_path) -> None:
         self.file_path = file_path
         self.subject = []
         self.author = []
@@ -31,10 +31,10 @@ class ReadEpubInfo:
                 self.opf_name = "EPUB/package.opf"
 
             self.opf_data = epub.read(self.opf_name).decode("utf-8")
-            self.root = ET.fromstring(self.opf_data)
-        self._retrieve_infos()
+            self.root = Et.fromstring(self.opf_data)
+        self._retrieve_metadata()
 
-    def _retrieve_infos(self) -> None:
+    def _retrieve_metadata(self) -> None:
         self.epub_version = self.root.attrib["version"]
         for child in self.root:
             if child.tag == "{http://www.idpf.org/2007/opf}metadata":
@@ -79,29 +79,17 @@ class ReadEpubInfo:
                                 self.modified_date = metadata.text
                             else:
                                 self.published_date = metadata.text
-                        except:
-                            pass
+                        except Exception as error:
+                            print(error)
                     elif metadata.tag == "{http://purl.org/dc/elements/1.1/}source":
                         self.source = metadata.text
                     elif metadata.tag == "{http://purl.org/dc/elements/1.1/}publisher":
                         self.publisher = metadata.text
 
-            if child.tag == "{http://www.idpf.org/2007/opf}spine":
-                for spine in child:
-                    if spine.attrib['idref'] == 'cover.xhtml':
-                        cover_file =
-                    print(spine.tag)
-                    print(spine.attrib['idref'])
-                    try:
-                        print(spine.attrib['{http://www.idpf.org/2007/opf}itemref'])
-                    except:
-                        ...
-                    # if spine.tag == ""
-                ...
-    def get_info(
+    def get_metadata(
             self,
-            parameter: Literal[
-                'epub_version',
+            metadata_key: Literal[
+                "epub_version",
                 "book_name",
                 "author_name",
                 "publisher_name",
@@ -113,43 +101,58 @@ class ReadEpubInfo:
                 "rights",
                 "publication_date",
             ],
-    ) -> str | list:
+    ) -> List[str] | str:
         """
         return str or list
         """
-        if parameter == "epub_version":
+        if metadata_key == "epub_version":
             return self.epub_version
-        elif parameter == "book_name":
+        elif metadata_key == "book_name":
             return self.title
-        elif parameter == "epub_version":
+        elif metadata_key == "epub_version":
             return self.epub_version
-        elif parameter == "author_name":
+        elif metadata_key == "author_name":
             return self.author
-        elif parameter == "publisher_name":
+        elif metadata_key == "publisher_name":
             return self.publisher
-        elif parameter == "ISBN":
+        elif metadata_key == "ISBN":
             return self.isbn
-        elif parameter == "ASIN":
+        elif metadata_key == "ASIN":
             return self.asin
-        elif parameter == "bookid":
+        elif metadata_key == "bookid":
             return self.bookid
-        elif parameter == "language":
+        elif metadata_key == "language":
             return self.language
-        elif parameter == "describe":
+        elif metadata_key == "describe":
             return self.subject
-        elif parameter == "rights":
+        elif metadata_key == "rights":
             return self.rights
-        elif parameter == "publication_date":
+        elif metadata_key == "publication_date":
             return self.published_date
 
-    def get_infos(self, parameters: list[str, str, ...]) -> dict:
+    def get_selected_metadata(
+            self,
+            metadata_keys: Iterable[Literal[
+                "epub_version",
+                "book_name",
+                "author_name",
+                "publisher_name",
+                "ISBN",
+                "ASIN",
+                "bookid",
+                "describe",
+                "language",
+                "rights",
+                "publication_date",]
+            ]
+    ) -> Dict[str: str]:
         infos = {}
-        for parameter in parameters:
-            if self.get_info(parameter):
-                infos.update({parameter: self.get_info(parameter)})
+        for metadata_key in metadata_keys:
+            if self.get_metadata(metadata_key):
+                infos.update({metadata_key: self.get_metadata(metadata_key)})
         return infos
 
-    def get_all_infos(self):
+    def get_all_metadata(self) -> Dict[str: str]:
         return {
             "epub_version": self.epub_version,
             "rights": self.rights,
