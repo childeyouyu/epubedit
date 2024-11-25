@@ -5,7 +5,7 @@
 -->
 # EpubEdit
 
-> Regarding epubedit, this is a Python package for viewing and editing epub file metadata
+> **EpubEdit** is a Python package for viewing and editing EPUB file metadata.
 
 ## Installation and Usage
 
@@ -15,76 +15,78 @@
 pip install epubedit
 ```
 
-* Usage
+* Usage:
 
 ``` Python
+from epubedit import Epubedit # import the library
 
-from epubedit import read_epub_info
-
-
-book = read_epub_info('book_name')
-book.get_infos()
+book = Epubedit('book_name') # create Epubedit object 
+book.get_metadata() 
 ```
 
-## Functions
+## Methods
 
-### read_info(str) -> str | list
+1. get_metadata -> `str | List[str]`
+2. get_selected_metadata -> `Dict[str: str]`
+3. get_all_metadata -> `Dict[str: str]`
 
-Read the value of a single metadata
-Supported parameters:
-            [
-                'epub_version',
-                "book_name",
-                "author_name",
-                "publisher_name",
-                "ISBN",
-                "ASIN",
-                "bookid",
-                "describe",
-                "language",
-                "rights",
-                "publication_date",
-            ]
+  ### 1. get_metadata(str) -> `str | List`
 
-Example:
+  Read the value of a single metadata 
+  
+  Supported parameters:
 
-``` Python
-from epubedit import read_epub_info
+  - "epub_version"
+  - "book_name"
+  - "author_name"
+  - "publisher_name"
+  - "ISBN"
+  - "ASIN"
+  - "bookid"
+  - "describe"
+  - "language"
+  - "rights"
+  - "publication_date"
+            
 
-book = read_epub_info("Moby Dick.epub")
-print(book.get_info('book_name'))
-```
+  Example:
+  
+  ``` Python
+  from epubedit import Epubedit
+  
+  book = Epubedit("Moby Dick.epub")
+  print(book.get_metadata('book_name'))
+  ```
 
-Running results
+  Running results
+  
+  ```Python
+  Moby Dick; Or, The Whale
+  ```
+  ### 2. get_selected_metadata(Iterable[str]) -> `Dict[str: str]`
+  
+  Pass a list and transmit the corresponding metadata values
+  
+  ``` Python
+  from epubedit import Epubedit
+  
+  book = Epubedit("Moby Dick.epub")
+  print(book.get_selected_metadata(["book_name", "epub_version", "language"]))
+  ```
+  
+  Running results
+  
+  ```Python
+  {"book_name": "Moby Dick; Or, The Whale", "epub_version": "3.0", "language": "en"}
+  ```
 
-```Python
-Moby Dick; Or, The Whale
-```
-
-### read_infos(list) -> list
-
-Pass a list and transmit the corresponding metadata values
-
-``` Python
-from epubedit import read_epub_info
-
-book = read_epub_info("Moby Dick.epub")
-print(book.get_infos(["book_name", "epub_version", "language"]))
-```
-
-Running results
-
-```Python
-{"book_name": "Moby Dick; Or, The Whale", "epub_version": "3.0", "language": "en"}
-```
-
-### read_all_infos() -> dict
+### 3. get_all_metadata() -> `Dict[str: str]`
 
 No input value, all metadata information is transmitted. If there is a lack of relevant information in EPUB, it will return str: "" or list: []
 
 ``` Python
-book = read_epub_info('Moby Dick.epub')
-print(book.get_all_infos())
+book = Epubedit('Moby Dick.epub')
+print(book.get_all_metadata())
 ```
 
 Running results
@@ -110,8 +112,8 @@ Running results
         "Mentally ill -- Fiction",
         "Ahab, Captain (Fictitious character) -- Fiction",
         "Whales -- Fiction",
-        "Whaling ships -- Fiction",
-    ],
+        "Whaling ships -- Fiction"
+    ]
 }
 ```
 

@@ -1,4 +1,4 @@
-from .epubedit import ReadEpubInfo
+from .epubedit import read_epub_info
 
 """
 epubedit: // a python package to read ePub infos and edit it.
