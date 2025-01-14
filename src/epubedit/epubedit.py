@@ -145,14 +145,14 @@ class Epubedit:
                 "rights",
                 "publication_date",]
             ]
-    ) -> Dict[str: str]:
+    ) -> Dict[str, str]:
         infos = {}
         for metadata_key in metadata_keys:
             if self.get_metadata(metadata_key):
                 infos.update({metadata_key: self.get_metadata(metadata_key)})
         return infos
 
-    def get_all_metadata(self) -> Dict[str: str]:
+    def get_all_metadata(self) -> Dict[str, str]:
         return {
             "epub_version": self.epub_version,
             "rights": self.rights,
