@@ -172,54 +172,49 @@ class Epubedit:
         if new_file_path is None:
             new_file_path = self.file_path
         try:
-            # 创建一个临时目录来解压EPUB文件
-            temp_dir = "temp_epub"  # 临时目录名称
-            os.makedirs(temp_dir, exist_ok=True)  # 创建临时目录，如果目录已存在则忽略
+            temp_dir = "temp_epub"
+            os.makedirs(temp_dir, exist_ok=True)
 
-            # 解压EPUB文件到临时目录
-            with zipfile.ZipFile(new_file_path, 'r') as zip_ref:  # 打开EPUB文件（ZIP格式）
-                zip_ref.extractall(temp_dir)  # 将EPUB文件解压到临时目录
+            with zipfile.ZipFile(new_file_path, 'r') as zip_ref:
+                zip_ref.extractall(temp_dir)
 
-            # 找到`container.xml`文件路径
+            # Find the `container.xml` file path
             container_path = os.path.join(temp_dir, "META-INF", "container.xml")  # 拼接路径
             container_tree = Et.parse(container_path)  # 解析`container.xml`文件
             container_root = container_tree.getroot()  # 获取XML根元素
 
-            # 从`container.xml`中找到`content.opf`文件的路径
-            # `content.opf`文件通常包含EPUB的元数据
-            rootfile = container_root.find(".//{urn:oasis:names:tc:opendocument:xmlns:container}rootfile")
-            content_opf_path = os.path.join(temp_dir, rootfile.attrib["full-path"])  # 拼接`content.opf`的完整路径
+            # Find the path to the `content.opf` file from `container.xml`
+            root_file = container_root.find(".//{urn:oasis:names:tc:opendocument:xmlns:container}root_file")
+            content_opf_path = os.path.join(temp_dir, root_file.attrib["full-path"])
 
-            # 解析`content.opf`文件
-            content_tree = Et.parse(content_opf_path)  # 解析`content.opf`文件
-            content_root = content_tree.getroot()  # 获取XML根元素
+            content_tree = Et.parse(content_opf_path)
+            content_root = content_tree.getroot()
 
-
-            # 修改 协议版本
+            # modify protocol version
             content_root.attrib["version"] = self.epub_version
-            # 修改 版权信息
+            # modify copyright information
             if self.rights:
-                rights = content_root.find(".//{http://purl.org/dc/elements/1.1/}rights")  # 查找<rights>标签
-                if rights is not None:  # 如果找到<rights>标签
-                    rights.text = self.rights  # 修改版权信息内容
+                rights = content_root.find(".//{http://purl.org/dc/elements/1.1/}rights")
+                if rights is not None:
+                    rights.text = self.rights
                 else:
                     rights= Et.Element("{http://purl.org/dc/elements/1.1/}rights")
                     rights.text = self.rights
                 content_root.append(rights)
 
-            # 修改书名
+            # modify book title
             if self.title:
-                title = content_root.find(".//{http://purl.org/dc/elements/1.1/}title")  # 查找<title>标签
-                if title is not None:  # 如果找到<title>标签
-                    title.text = self.title  # 修改标题内容
+                title = content_root.find(".//{http://purl.org/dc/elements/1.1/}title")
+                if title is not None:
+                    title.text = self.title
                 else:
                     title = Et.Element("{http://purl.org/dc/elements/1.1/}title")
                     title.text = self.title
                 content_root.append(title)
 
 
-            # 修改作者
-            # 找到所有的<creator>标签并删除
+            # Modify author
+            # Find all <creator> tags and delete them
             if self.author:
                 creators = content_root.findall(".//{http://purl.org/dc/elements/1.1/}creator")
                 if creators is not None:
@@ -228,7 +223,7 @@ class Epubedit:
                 else:
                     creators = Et.Element("{http://purl.org/dc/elements/1.1/}creator")
 
-                # 添加新的<creator>标签
+                # Add new <creator> tag
                 for author in self.author:
                     creators.text = author
                     content_root.append(creators)
@@ -237,13 +232,11 @@ class Epubedit:
                 isbn = content_root.find(".//{http://purl.org/dc/elements/1.1/}identifier")
                 if isbn is not None:
                     for identifier in self.identifier:
-                        # 检查是否是ISBN（通常以`urn:isbn:`开头）
                         if identifier.text.startswith("urn:isbn:"):
                             identifier.text = f"urn:isbn:{self.isbn}"  # 更新ISBN
                             content_root.append(identifier)
                             break
                 else:
-                    # 如果没有找到ISBN，添加一个新的<identifier>标签
                     identifier = Et.Element("{http://purl.org/dc/elements/1.1/}identifier")
                     identifier.text = f"urn:isbn:{self.isbn}"
                     identifier.set("id", "ISBN")  # 可选：设置ID
@@ -252,21 +245,18 @@ class Epubedit:
                 asin = content_root.find(".//{http://purl.org/dc/elements/1.1/}identifier")
                 if asin is not None:
                     for identifier in self.identifier:
-                        # 检查是否是ISBN（通常以`urn:asin:`开头）
                         if identifier.text.startswith("urn:asin:"):
-                            identifier.text = f"urn:asin:{self.asin}"  # 更新ASIN
+                            identifier.text = f"urn:asin:{self.asin}"
                             content_root.append(identifier)
                             break
                 else:
-                    # 如果没有找到ISBN，添加一个新的<identifier>标签
+
                     identifier = Et.Element("{http://purl.org/dc/elements/1.1/}identifier")
                     identifier.text = f"urn:asin:{self.asin}"
-                    identifier.set("id", "ASIN")  # 可选：设置ID
+                    identifier.set("id", "ASIN")
                     content_root.append(identifier)
-                    # 如果没有找到ASIN，添加一个新的<identifier>标签
-            # 修改标签（如果提供了新标签列表）
 
-            # 找到所有的<subject>标签并删除
+            # Modify tags (if a new tag list is provided)
             if self.subject:
                 subjects = content_root.findall(".//{http://purl.org/dc/elements/1.1/}subject")
                 for subject in subjects:
@@ -274,64 +264,56 @@ class Epubedit:
                 else:
                     subjects = Et.Element("{http://purl.org/dc/elements/1.1/}subject")
 
-                # 添加新的<creator>标签
                 for subject in self.subject:
                     subjects.text = subject
                     content_root.append(subjects)
             if self.publisher:
-                publisher = content_root.find(".//{http://purl.org/dc/elements/1.1/}publisher")  # 查找<publisher>标签
-                if publisher is not None:  # 如果找到<publisher>标签
-                    ...  # 修改出版社内容
+                publisher = content_root.find(".//{http://purl.org/dc/elements/1.1/}publisher")
+                if publisher is not None:
+                    ...
                 else:
                     publisher = Et.Element("{http://purl.org/dc/elements/1.1/}publisher")
                 publisher.text = self.publisher
                 content_root.append(publisher)
 
-            # 修改出版时间（如果提供了新出版时间）
+            # Modify publication time
             if self.published_date:
-                # 找到所有的<dc:date>标签
                 dates = content_root.findall(".//{http://purl.org/dc/elements/1.1/}date")
                 for date in dates:
-                    # 检查是否是出版时间（通常使用`event="publication"`属性）
                     if date.get("event") == "publication":
-                        date.text = self.published_date  # 更新出版时间
+                        date.text = self.published_date
                         break
                 else:
-                    # 如果没有找到出版时间，添加一个新的<dc:date>标签
                     date = Et.Element("{http://purl.org/dc/elements/1.1/}date")
                     date.text = self.published_date
-                    date.set("event", "publication")  # 设置属性
+                    date.set("event", "publication")
                     content_root.append(date)
 
-            # 修改修改时间（如果提供了新修改时间）
-            # 找到所有的<dc:date>标签
+            # Modification modification time
             dates = content_root.findall(".//{http://purl.org/dc/elements/1.1/}date")
             for date in dates:
-                # 检查是否是修改时间（通常使用`event="modification"`属性）
                 if date.get("event") == "modification":
-                    date.text = self.modified_date  # 更新修改时间
+                    date.text = self.modified_date
                     break
             else:
-                # 如果没有找到修改时间，添加一个新的<dc:date>标签
                 date = Et.Element("{http://purl.org/dc/elements/1.1/}date")
                 date.text = self.modified_date
-                date.set("event", "modification")  # 设置属性
+                date.set("event", "modification")
                 content_root.append(date)
 
-            # 保存修改后的`content.opf`文件
-            content_tree.write(content_opf_path, encoding="utf-8", xml_declaration=True)  # 将修改后的XML写回文件
+            # Save the modified `content.opf` file
+            content_tree.write(content_opf_path, encoding="utf-8", xml_declaration=True)  # Write the modified XML back to the file
 
-            # 重新打包EPUB文件
-            new_epub_path = new_file_path  # .replace(".epub", "_modified.epub")  # 新EPUB文件的路径
-            with zipfile.ZipFile(new_epub_path, 'w') as zip_ref:  # 创建一个新的ZIP文件
-                for root, dirs, files in os.walk(temp_dir):  # 遍历临时目录中的所有文件
+            # Repackage EPUB files
+            new_epub_path = new_file_path  # .replace(".epub", "_modified.epub")
+            with zipfile.ZipFile(new_epub_path, 'w') as zip_ref:
+                for root, dirs, files in os.walk(temp_dir):
                     for file in files:
-                        file_path = os.path.join(root, file)  # 获取文件的完整路径
-                        arcname = os.path.relpath(file_path, temp_dir)  # 计算文件在ZIP中的相对路径
-                        zip_ref.write(file_path, arcname)  # 将文件添加到ZIP中
+                        file_path = os.path.join(root, file)
+                        arcname = os.path.relpath(file_path, temp_dir)
+                        zip_ref.write(file_path, arcname)
 
-            # 删除临时目录
-            shutil.rmtree(temp_dir)  # 递归删除临时目录及其内容
+            shutil.rmtree(temp_dir)
             return True
         except Exception as error:
             print(error)

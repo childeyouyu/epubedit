@@ -28,4 +28,6 @@ book.change_metadata("publication_date", f"{datetime.today()}")
 book.change_metadata('author_name', '魏冬旭')
 book.change_metadata('publisher_name', "九州出版社")
 
+book.commit()
+
 print(book.get_all_metadata())
