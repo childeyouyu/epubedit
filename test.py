@@ -1,4 +1,4 @@
-from src.epubedit.epubedit import Epubedit
+from src.epubedit import Epubedit
 from datetime import datetime
 
 #
@@ -15,18 +15,12 @@ from datetime import datetime
 # print(book.get_all_metadata())
 
 
+book = Epubedit("your.epub")
 
-book = Epubedit("book.epub")
-
-book.change_metadata("epub_version", "6")
-book.change_metadata("rights", "无版权")
+book.change_metadata("epub_version", "3.0")
 book.change_metadata("book_name", "新书")
-book.change_metadata("ISBN", "95675226")
-book.change_metadata("ASIN", "89525226")
-book.change_metadata("publication_date", f"{datetime.today()}")
-
-book.change_metadata('author_name', '魏冬旭')
-book.change_metadata('publisher_name', "九州出版社")
+book.change_metadata("author_name", "魏冬旭")
+book.change_metadata("publisher_name", "九州出版社")
 
 book.commit()
 

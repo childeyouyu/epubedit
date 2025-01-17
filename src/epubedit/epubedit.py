@@ -1,17 +1,23 @@
+import contextlib
 import os
 import shutil
+import tempfile
 import zipfile
 import xml.etree.ElementTree as Et
 from typing import Literal, List, Dict, Iterable
+from pathlib import Path
 
 
 class Epubedit:
-    ns = {
-
+    namespaces = {
+        "ns": "urn:oasis:names:tc:opendocument:xmlns:container",
+        "dc": "http://purl.org/dc/elements/1.1/",
+        "opf": "http://www.idpf.org/2007/opf",
     }
 
     def __init__(self, file_path) -> None:
         self.file_path = file_path
+        self.bookid = None
         self.subject = []
         self.author = []
         self.rights = ""
@@ -49,13 +55,13 @@ class Epubedit:
                             self.bookid = metadata.text
                         if "{http://www.idpf.org/2007/opf}scheme" in metadata.attrib:
                             if (
-                                    metadata.attrib["{http://www.idpf.org/2007/opf}scheme"]
-                                    == "ASIN"
+                                metadata.attrib["{http://www.idpf.org/2007/opf}scheme"]
+                                == "ASIN"
                             ):
                                 self.asin = metadata.text
                             elif (
-                                    metadata.attrib["{http://www.idpf.org/2007/opf}scheme"]
-                                    == "ISBN"
+                                metadata.attrib["{http://www.idpf.org/2007/opf}scheme"]
+                                == "ISBN"
                             ):
                                 self.isbn = metadata.text
                     elif metadata.tag == "{http://purl.org/dc/elements/1.1/}creator":
@@ -75,8 +81,8 @@ class Epubedit:
                     elif metadata.tag == "{http://purl.org/dc/elements/1.1/}date":
                         try:
                             if (
-                                    metadata.attrib["{http://www.idpf.org/2007/opf}event"]
-                                    == "modification"
+                                metadata.attrib["{http://www.idpf.org/2007/opf}event"]
+                                == "modification"
                             ):
                                 self.modified_date = metadata.text
                             else:
@@ -89,20 +95,20 @@ class Epubedit:
                         self.publisher = metadata.text
 
     def get_metadata(
-            self,
-            metadata_key: Literal[
-                "epub_version",
-                "book_name",
-                "author_name",
-                "publisher_name",
-                "ISBN",
-                "ASIN",
-                "bookid",
-                "describe",
-                "language",
-                "rights",
-                "publication_date",
-            ],
+        self,
+        metadata_key: Literal[
+            "epub_version",
+            "book_name",
+            "author_name",
+            "publisher_name",
+            "ISBN",
+            "ASIN",
+            "bookid",
+            "describe",
+            "language",
+            "rights",
+            "publication_date",
+        ],
     ) -> List[str] | str:
         """
         return str or list
@@ -133,8 +139,9 @@ class Epubedit:
             return self.published_date
 
     def get_selected_metadata(
-            self,
-            metadata_keys: Iterable[Literal[
+        self,
+        metadata_keys: Iterable[
+            Literal[
                 "epub_version",
                 "book_name",
                 "author_name",
@@ -145,8 +152,9 @@ class Epubedit:
                 "describe",
                 "language",
                 "rights",
-                "publication_date",]
+                "publication_date",
             ]
+        ],
     ) -> Dict[str, str]:
         infos = {}
         for metadata_key in metadata_keys:
@@ -160,7 +168,7 @@ class Epubedit:
             "rights": self.rights,
             "book_name": self.title,
             "author": self.author,
-            'isbn': self.isbn,
+            "isbn": self.isbn,
             "asin": self.asin,
             "publisher": self.publisher,
             "published_date": self.published_date,
@@ -168,174 +176,139 @@ class Epubedit:
             "language": self.language,
             "subject": self.subject,
         }
-    def commit(self, new_file_path = None) -> bool:
-        if new_file_path is None:
-            new_file_path = self.file_path
-        try:
-            temp_dir = "temp_epub"
-            os.makedirs(temp_dir, exist_ok=True)
 
-            with zipfile.ZipFile(new_file_path, 'r') as zip_ref:
+    @staticmethod
+    def _create_temp_directory():
+        """Create a temporary directory and return the path"""
+        return Path(tempfile.mkdtemp(prefix="epub_"))
+
+    @staticmethod
+    def _clean_directory(directory):
+        """Safe clean directory"""
+        try:
+            if directory.exists():
+                shutil.rmtree(directory)
+        except Exception as e:
+            print(f"Warning: Failed to clean directory {directory}: {e}")
+
+    def commit(self, new_file_path=None) -> str | bool:
+        """Modify EPUB files"""
+        if new_file_path is None:
+            new_file_path = Path(self.file_path)
+            print("new_file_path: ", new_file_path)
+        new_file_path = Path(new_file_path)
+
+        temp_dir = None
+        try:
+            temp_dir = self._create_temp_directory()
+
+            # Unzip EPUB file
+            with zipfile.ZipFile(self.file_path, "r") as zip_ref:
                 zip_ref.extractall(temp_dir)
 
-            # Find the `container.xml` file path
-            container_path = os.path.join(temp_dir, "META-INF", "container.xml")  # 拼接路径
-            container_tree = Et.parse(container_path)  # 解析`container.xml`文件
-            container_root = container_tree.getroot()  # 获取XML根元素
+            # Process container.xml
+            container_path = temp_dir / "META-INF" / "container.xml"
+            if not container_path.exists():
+                raise FileNotFoundError("container.xml not found in EPUB")
 
-            # Find the path to the `content.opf` file from `container.xml`
-            root_file = container_root.find(".//{urn:oasis:names:tc:opendocument:xmlns:container}root_file")
-            content_opf_path = os.path.join(temp_dir, root_file.attrib["full-path"])
+            container_tree = Et.parse(container_path)
+            rootfile = container_tree.getroot().find(".//ns:rootfile", self.namespaces)
+            if rootfile is None:
+                raise ValueError("Invalid EPUB: rootfile element not found")
 
-            content_tree = Et.parse(content_opf_path)
-            content_root = content_tree.getroot()
+            # Process content.opf
+            content_opf_path = temp_dir / rootfile.get("full-path")
+            if not content_opf_path.exists():
+                raise FileNotFoundError(f"content.opf not found at: {content_opf_path}")
 
-            # modify protocol version
-            content_root.attrib["version"] = self.epub_version
-            # modify copyright information
-            if self.rights:
-                rights = content_root.find(".//{http://purl.org/dc/elements/1.1/}rights")
-                if rights is not None:
-                    rights.text = self.rights
-                else:
-                    rights= Et.Element("{http://purl.org/dc/elements/1.1/}rights")
-                    rights.text = self.rights
-                content_root.append(rights)
+            new_file_path.parent.mkdir(parents=True, exist_ok=True)
+            self._update_metadata(content_opf_path)
 
-            # modify book title
-            if self.title:
-                title = content_root.find(".//{http://purl.org/dc/elements/1.1/}title")
-                if title is not None:
-                    title.text = self.title
-                else:
-                    title = Et.Element("{http://purl.org/dc/elements/1.1/}title")
-                    title.text = self.title
-                content_root.append(title)
-
-
-            # Modify author
-            # Find all <creator> tags and delete them
-            if self.author:
-                creators = content_root.findall(".//{http://purl.org/dc/elements/1.1/}creator")
-                if creators is not None:
-                    for creator in creators:
-                        content_root.remove(creator)
-                else:
-                    creators = Et.Element("{http://purl.org/dc/elements/1.1/}creator")
-
-                # Add new <creator> tag
-                for author in self.author:
-                    creators.text = author
-                    content_root.append(creators)
-
-            if self.isbn:
-                isbn = content_root.find(".//{http://purl.org/dc/elements/1.1/}identifier")
-                if isbn is not None:
-                    for identifier in self.identifier:
-                        if identifier.text.startswith("urn:isbn:"):
-                            identifier.text = f"urn:isbn:{self.isbn}"  # 更新ISBN
-                            content_root.append(identifier)
-                            break
-                else:
-                    identifier = Et.Element("{http://purl.org/dc/elements/1.1/}identifier")
-                    identifier.text = f"urn:isbn:{self.isbn}"
-                    identifier.set("id", "ISBN")  # 可选：设置ID
-                    content_root.append(identifier)
-            if self.asin:
-                asin = content_root.find(".//{http://purl.org/dc/elements/1.1/}identifier")
-                if asin is not None:
-                    for identifier in self.identifier:
-                        if identifier.text.startswith("urn:asin:"):
-                            identifier.text = f"urn:asin:{self.asin}"
-                            content_root.append(identifier)
-                            break
-                else:
-
-                    identifier = Et.Element("{http://purl.org/dc/elements/1.1/}identifier")
-                    identifier.text = f"urn:asin:{self.asin}"
-                    identifier.set("id", "ASIN")
-                    content_root.append(identifier)
-
-            # Modify tags (if a new tag list is provided)
-            if self.subject:
-                subjects = content_root.findall(".//{http://purl.org/dc/elements/1.1/}subject")
-                for subject in subjects:
-                    content_root.remove(subject)
-                else:
-                    subjects = Et.Element("{http://purl.org/dc/elements/1.1/}subject")
-
-                for subject in self.subject:
-                    subjects.text = subject
-                    content_root.append(subjects)
-            if self.publisher:
-                publisher = content_root.find(".//{http://purl.org/dc/elements/1.1/}publisher")
-                if publisher is not None:
-                    ...
-                else:
-                    publisher = Et.Element("{http://purl.org/dc/elements/1.1/}publisher")
-                publisher.text = self.publisher
-                content_root.append(publisher)
-
-            # Modify publication time
-            if self.published_date:
-                dates = content_root.findall(".//{http://purl.org/dc/elements/1.1/}date")
-                for date in dates:
-                    if date.get("event") == "publication":
-                        date.text = self.published_date
-                        break
-                else:
-                    date = Et.Element("{http://purl.org/dc/elements/1.1/}date")
-                    date.text = self.published_date
-                    date.set("event", "publication")
-                    content_root.append(date)
-
-            # Modification modification time
-            dates = content_root.findall(".//{http://purl.org/dc/elements/1.1/}date")
-            for date in dates:
-                if date.get("event") == "modification":
-                    date.text = self.modified_date
-                    break
-            else:
-                date = Et.Element("{http://purl.org/dc/elements/1.1/}date")
-                date.text = self.modified_date
-                date.set("event", "modification")
-                content_root.append(date)
-
-            # Save the modified `content.opf` file
-            content_tree.write(content_opf_path, encoding="utf-8", xml_declaration=True)  # Write the modified XML back to the file
-
-            # Repackage EPUB files
-            new_epub_path = new_file_path  # .replace(".epub", "_modified.epub")
-            with zipfile.ZipFile(new_epub_path, 'w') as zip_ref:
-                for root, dirs, files in os.walk(temp_dir):
-                    for file in files:
-                        file_path = os.path.join(root, file)
-                        arcname = os.path.relpath(file_path, temp_dir)
+            # Create new EPUB
+            with zipfile.ZipFile(new_file_path, "w", zipfile.ZIP_DEFLATED) as zip_ref:
+                for file_path in temp_dir.rglob("*"):
+                    if file_path.is_file():
+                        arcname = file_path.relative_to(temp_dir)
                         zip_ref.write(file_path, arcname)
-
-            shutil.rmtree(temp_dir)
             return True
-        except Exception as error:
-            print(error)
-            return False
-        pass
+        except Exception as e:
+            print(f"Error modifying EPUB: {str(e)}")
+            if new_file_path.exists():
+                with contextlib.suppress(Exception):
+                    new_file_path.unlink()
+            raise
+
+        finally:
+            if temp_dir:
+                self._clean_directory(temp_dir)
+
+    def _update_metadata(self, content_opf_path):
+        """Update metadata section"""
+        tree = Et.parse(content_opf_path)
+
+        root = tree.getroot()
+        metadata = root.find(f".//{{{self.namespaces['opf']}}}metadata")
+
+        if metadata is None:
+            metadata = Et.SubElement(root, f"{{{self.namespaces['opf']}}}metadata")
+
+        # Update various metadata
+        if self.epub_version:
+            root.set("version", self.epub_version)
+
+        if self.title:
+            self._update_dc_element(metadata, "title", self.title)
+
+        if self.author:
+            self._update_creator_elements(metadata)
+
+        if self.rights:
+            self._update_dc_element(metadata, "rights", self.rights)
+
+        # if self.identifier:
+        #     self._update_dc_element(metadata, "identifier", self.identifier)
+        # Save updated file
+        tree.write(content_opf_path, encoding="utf-8", xml_declaration=True)
+
+    def _update_dc_element(self, metadata, element_name, value):
+        """Update or create DC elements"""
+        element = metadata.find(f".//{{{self.namespaces['dc']}}}{element_name}")
+        if element is None:
+            element = Et.SubElement(
+                metadata, f"{{{self.namespaces['dc']}}}{element_name}"
+            )
+        element.text = value
+
+    def _update_creator_elements(self, metadata):
+        """Update creator information"""
+        for creator in metadata.findall(f".//{{{self.namespaces['dc']}}}creator"):
+            metadata.remove(creator)
+
+        if isinstance(self.author, str):
+            authors = [self.author]
+        else:
+            authors = self.author
+
+        for author in authors:
+            creator = Et.SubElement(metadata, f"{{{self.namespaces['dc']}}}creator")
+            creator.text = author
 
     def change_metadata(
-            self,
-            metadata_key: Literal[
-                "epub_version",
-                "book_name",
-                "author_name",
-                "publisher_name",
-                "ISBN",
-                "ASIN",
-                "bookid",
-                "describe",
-                "language",
-                "rights",
-                "publication_date",
-            ] = None,
-            new_value: str = None,
+        self,
+        metadata_key: Literal[
+            "epub_version",
+            "book_name",
+            "author_name",
+            "publisher_name",
+            # "ISBN",
+            # "ASIN",
+            # "bookid",
+            # "describe",
+            # "language",
+            # "rights",
+            # "publication_date",
+        ] = None,
+        new_value: str = None,
     ) -> bool:
         if metadata_key == "epub_version":
             self.epub_version = new_value
