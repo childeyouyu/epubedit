@@ -119,6 +119,7 @@ Running results
 
 ### change_metadata(Dict[str: str]) -> `None`
 
+```
 book = Epubedit("your.epub")
 
 book.change_metadata("epub_version", "3.0")
@@ -127,6 +128,7 @@ book.change_metadata("author_name", "new_author")
 book.change_metadata("publisher_name", "new_publisher")
 
 book.commit()
+```
 
 ## Links
 
