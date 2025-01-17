@@ -122,9 +122,9 @@ Running results
 book = Epubedit("your.epub")
 
 book.change_metadata("epub_version", "3.0")
-book.change_metadata("book_name", "新书")
-book.change_metadata("author_name", "魏冬旭")
-book.change_metadata("publisher_name", "九州出版社")
+book.change_metadata("book_name", "new_name")
+book.change_metadata("author_name", "new_author")
+book.change_metadata("publisher_name", "new_publisher")
 
 book.commit()
 
