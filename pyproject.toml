@@ -1,0 +1,44 @@
+[build-system]
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "epubedit"
+version = "0.1.1"
+authors = [
+  { name = "Youyu" }
+]
+
+license = { file = "LICENSE" }
+
+description = "a python package to read ePub infos and edit it."
+readme = "README.md"
+requires-python = ">=3.12.0"
+classifiers = [
+  "Programming Language :: Python :: 3",
+  "License :: OSI Approved :: MIT License",
+  "Operating System :: OS Independent",
+  "Development Status :: 5 - Production/Stable",
+]
+
+keywords = [
+  "epub",
+  "ebook", 
+  "metadata search",
+  "content.opf",
+  "ebook-reader",
+  "ebook-editor",
+  "epub-tools",
+  "digital-publishing",
+  "ebook-converter",
+  "ebook-management",
+  "ebook-library",
+  "metadata",
+  'metadata-editor',
+  "epub-metadata",
+]
+
+[project.urls]
+homepage = "https://github.com/childeyouyu/epubedit"
+repository = "https://github.com/childeyouyu/epubedit"
+issues = "https://github.com/childeyouyu/epubedit/issues"
