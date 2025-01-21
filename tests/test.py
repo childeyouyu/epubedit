@@ -1,4 +1,4 @@
-from ..epubedit import Epubedit
+from epubedit import Epubedit
 from datetime import datetime
 
 #
