@@ -13,7 +13,7 @@
 [![Downloads](https://static.pepy.tech/badge/epubedit)](https://pepy.tech/project/epubedit) ![Downloads last 6 month](https://static.pepy.tech/personalized-badge/epubedit?period=total&units=international_system&left_color=grey&right_color=BLUE&left_text=downloads%20last%206%20month) [![Downloads](https://static.pepy.tech/badge/epubedit/month)](https://pepy.tech/project/epubedit) [![Downloads](https://static.pepy.tech/badge/epubedit/week)](https://pepy.tech/project/epubedit)
 
 ![PyPI - License](https://img.shields.io/badge/license-MIT-blue)
-![LOC](https://tokei.rs/b1/github/Thisal-D/epubedit?category=lines)
+![LOC](https://tokei.rs/b1/github/childeyouyu/epubedit?category=lines)
 
 </div>
 
