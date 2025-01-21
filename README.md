@@ -3,9 +3,22 @@
  * @LastEditors: youyu 2000601104@cjlu.edu.cn
  * @LastEditTime: 2024-07-22 23:47:12
 -->
+
+<div align="center">
+
 # EpubEdit
 
-> **EpubEdit** is a Python package for viewing and editing EPUB file metadata.
+[![PyPI version](https://badge.fury.io/py/epubedit.svg)](https://pypi.org/project/epubedit/)
+
+[![Downloads](https://static.pepy.tech/badge/epubedit)](https://pepy.tech/project/epubedit) ![Downloads last 6 month](https://static.pepy.tech/personalized-badge/epubedit?period=total&units=international_system&left_color=grey&right_color=BLUE&left_text=downloads%20last%206%20month) [![Downloads](https://static.pepy.tech/badge/epubedit/month)](https://pepy.tech/project/epubedit) [![Downloads](https://static.pepy.tech/badge/epubedit/week)](https://pepy.tech/project/epubedit)
+
+![PyPI - License](https://img.shields.io/badge/license-MIT-blue)
+![LOC](https://tokei.rs/b1/github/Thisal-D/epubedit?category=lines)
+
+</div>
+
+**EpubEdit** is a Python package for viewing and editing EPUB file metadata.
+
 
 ## Installation and Usage
 
@@ -26,27 +39,27 @@ book.get_metadata()
 
 ## Methods
 
-1. get_metadata -> `str | List[str]`
-2. get_selected_metadata -> `Dict[str: str]`
-3. get_all_metadata -> `Dict[str: str]`
+1. get_metadata -> `str` | `List[str]`
+2. get_selected_metadata -> `Dict[str, str]`
+3. get_all_metadata -> `Dict[str, str]`
 
-  ### 1. get_metadata(str) -> `str | List`
+  ### 1. get_metadata(`str`) -> `str` | `List`
 
   Read the value of a single metadata 
   
-  Supported parameters:
+  #### Supported parameters:
 
-  - "epub_version"
-  - "book_name"
-  - "author_name"
-  - "publisher_name"
-  - "ISBN"
-  - "ASIN"
-  - "bookid"
-  - "describe"
-  - "language"
-  - "rights"
-  - "publication_date"
+ - "epub_version"
+ - "book_name"
+ - "author_name"
+ - "publisher_name"
+ - "ISBN"
+ - "ASIN"
+ - "bookid"
+ - "describe"
+ - "language"
+ - "rights"
+ - "publication_date"
             
 
   Example:
@@ -60,10 +73,10 @@ book.get_metadata()
 
   Running results
   
-  ```Python
+  ``` python
   Moby Dick; Or, The Whale
   ```
-  ### 2. get_selected_metadata(Iterable[str]) -> `Dict[str: str]`
+  ### 2. get_selected_metadata(`Iterable[str]`) -> `Dict[str, str]`
   
   Pass a list and transmit the corresponding metadata values
   
@@ -76,22 +89,22 @@ book.get_metadata()
   
   Running results
   
-  ```Python
+  ``` python
   {"book_name": "Moby Dick; Or, The Whale", "epub_version": "3.0", "language": "en"}
   ```
 
 ### 3. get_all_metadata() -> `Dict[str: str]`
 
-No input value, all metadata information is transmitted. If there is a lack of relevant information in EPUB, it will return str: "" or list: []
+No input value, all metadata information is transmitted. If there is a lack of relevant information in EPUB, it will return `str`: "" or `list`: []
 
-``` Python
+``` python
 book = Epubedit('Moby Dick.epub')
 print(book.get_all_metadata())
 ```
 
 Running results
 
-```Python
+``` python
 {
     "epub_version": "3.0",
     "rights": "Public domain in the USA.",
@@ -117,9 +130,9 @@ Running results
 }
 ```
 
-### change_metadata(Dict[str: str]) -> `None`
+### change_metadata(`Dict[str, str]`) -> `None`
 
-```
+``` python
 book = Epubedit("your.epub")
 
 book.change_metadata("epub_version", "3.0")
@@ -133,3 +146,4 @@ book.commit()
 ## Links
 
 * **GitHub Repository :** [EpubEdit](https://github.com/childeyouyu/epubedit)
+* **Pypi Project :** [EpubEdit](https://pypi.org/project/epubedit/)
