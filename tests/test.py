@@ -1,4 +1,4 @@
-from src.epubedit import Epubedit
+from epubedit import Epubedit
 from datetime import datetime
 
 #
@@ -15,7 +15,7 @@ from datetime import datetime
 # print(book.get_all_metadata())
 
 
-book = Epubedit("your.epub")
+book = Epubedit("book.epub") # Replace your book.epub with your own one
 
 book.change_metadata("epub_version", "3.0")
 book.change_metadata("book_name", "新书")
